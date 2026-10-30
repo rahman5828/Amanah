@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'screens/login_screen.dart';
 
 void main() {
   runApp(const AmanahApp());
@@ -126,7 +127,7 @@ class WelcomeScreen extends StatelessWidget {
                   onPressed: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => const GetStartedScreen(),
+                        builder: (_) => const LoginScreen(),
                       ),
                     );
                   },
@@ -184,14 +185,19 @@ class EmbracePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
+
     final paint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = size.width * 0.16
       ..strokeCap = StrokeCap.round;
 
     paint.color = const Color(0xFF344F45);
+
     canvas.drawArc(
-      Rect.fromCircle(center: center, radius: size.width * 0.34),
+      Rect.fromCircle(
+        center: center,
+        radius: size.width * 0.34,
+      ),
       -2.5,
       2.4,
       false,
@@ -199,8 +205,12 @@ class EmbracePainter extends CustomPainter {
     );
 
     paint.color = const Color(0xFFD9A18F);
+
     canvas.drawArc(
-      Rect.fromCircle(center: center, radius: size.width * 0.34),
+      Rect.fromCircle(
+        center: center,
+        radius: size.width * 0.34,
+      ),
       0.65,
       2.4,
       false,
@@ -216,62 +226,4 @@ class EmbracePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class GetStartedScreen extends StatelessWidget {
-  const GetStartedScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF4F0E8),
-        title: const Text(
-          'AMANAH',
-          style: TextStyle(
-            letterSpacing: 3,
-            fontWeight: FontWeight.bold,
-            color: WelcomeScreen.forest,
-          ),
-        ),
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(28),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.favorite_outline_rounded,
-                size: 56,
-                color: WelcomeScreen.forest,
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Your journey starts here.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 27,
-                  fontWeight: FontWeight.w600,
-                  color: WelcomeScreen.forest,
-                ),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'We are creating a space where life feels '
-                'a little more organised and the people '
-                'you care about feel a little closer.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 15,
-                  height: 1.6,
-                  color: Color(0xFF69786D),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
