@@ -1,8 +1,12 @@
 
 import 'package:flutter/material.dart';
+
+import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
+import 'services/auth_service.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const AmanahApp());
 }
 
@@ -24,8 +28,185 @@ class AmanahApp extends StatelessWidget {
         ),
         fontFamily: 'Roboto',
       ),
-      home: const WelcomeScreen(),
+      home: const SessionGate(),
     );
+  }
+}
+
+// Checks whether the user already has a valid login session.
+class SessionGate extends StatefulWidget {
+  const SessionGate({super.key});
+
+  @override
+  State<SessionGate> createState() => _SessionGateState();
+}
+
+class _SessionGateState extends State<SessionGate> {
+  final AuthService _authService = AuthService();
+
+  bool _isLoading = true;
+  bool _hasError = false;
+
+  Map<String, dynamic>? _profile;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkSession();
+  }
+
+  Future<void> _checkSession() async {
+    setState(() {
+      _isLoading = true;
+      _hasError = false;
+    });
+
+    try {
+      final profile = await _authService.getProfile();
+
+      if (!mounted) return;
+
+      setState(() {
+        _profile = profile;
+        _isLoading = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+
+      final message = error.toString();
+
+      // No saved token or expired/invalid session.
+      if (message.contains('Not authenticated') ||
+          message.contains('Session expired')) {
+        setState(() {
+          _profile = null;
+          _isLoading = false;
+          _hasError = false;
+        });
+        return;
+      }
+
+      // Network or server error: preserve the saved token
+      // and let the user retry.
+      setState(() {
+        _profile = null;
+        _isLoading = false;
+        _hasError = true;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFF4F0E8),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              EmbraceLogo(size: 64),
+              SizedBox(height: 24),
+              CircularProgressIndicator(
+                color: Color(0xFF344F45),
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Preparing your space...',
+                style: TextStyle(
+                  color: Color(0xFF344F45),
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_hasError) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF4F0E8),
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(28),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.cloud_off_rounded,
+                    color: Color(0xFF344F45),
+                    size: 56,
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Unable to connect',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF344F45),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'We couldn\'t verify your session. '
+                    'Please check your internet connection '
+                    'and try again.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 15,
+                      height: 1.6,
+                      color: Color(0xFF69786D),
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 54,
+                    child: FilledButton(
+                      onPressed: _checkSession,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF344F45),
+                      ),
+                      child: const Text('Try again'),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextButton(
+                    onPressed: () async {
+                      await _authService.logout();
+
+                      if (!mounted) return;
+
+                      setState(() {
+                        _hasError = false;
+                        _profile = null;
+                      });
+                    },
+                    child: const Text(
+                      'Continue without signing in',
+                      style: TextStyle(
+                        color: Color(0xFF344F45),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (_profile != null) {
+      return HomeScreen(
+        fullName: _profile!['full_name'] as String,
+        email: _profile!['email'] as String,
+      );
+    }
+
+    return const WelcomeScreen();
   }
 }
 
@@ -47,7 +228,6 @@ class WelcomeScreen extends StatelessWidget {
             children: [
               const Spacer(flex: 2),
 
-              // Brand symbol
               Container(
                 width: 112,
                 height: 112,

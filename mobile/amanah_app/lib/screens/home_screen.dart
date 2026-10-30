@@ -1,6 +1,10 @@
+
 import 'package:flutter/material.dart';
 
-class HomeScreen extends StatelessWidget {
+import '../services/auth_service.dart';
+import '../main.dart';
+
+class HomeScreen extends StatefulWidget {
   final String fullName;
   final String email;
 
@@ -10,8 +14,52 @@ class HomeScreen extends StatelessWidget {
     required this.email,
   });
 
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
   static const Color forest = Color(0xFF344F45);
   static const Color ivory = Color(0xFFF4F0E8);
+
+  final AuthService _authService = AuthService();
+
+  bool _isLoggingOut = false;
+
+  Future<void> _logout() async {
+    if (_isLoggingOut) return;
+
+    setState(() {
+      _isLoggingOut = true;
+    });
+
+    try {
+      await _authService.logout();
+
+      if (!mounted) return;
+
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (_) => const WelcomeScreen(),
+        ),
+        (route) => false,
+      );
+    } catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to log out. Please try again.'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoggingOut = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,11 +71,18 @@ class HomeScreen extends StatelessWidget {
         foregroundColor: Colors.white,
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout),
+            onPressed: _isLoggingOut ? null : _logout,
             tooltip: 'Logout',
-            onPressed: () {
-              Navigator.popUntil(context, (route) => route.isFirst);
-            },
+            icon: _isLoggingOut
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : const Icon(Icons.logout),
           ),
         ],
       ),
@@ -39,11 +94,14 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(height: 30),
             const Text(
               'Welcome to AMANAH,',
-              style: TextStyle(fontSize: 18, color: forest),
+              style: TextStyle(
+                fontSize: 18,
+                color: forest,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
-              fullName,
+              widget.fullName,
               style: const TextStyle(
                 fontSize: 30,
                 fontWeight: FontWeight.bold,
@@ -52,7 +110,7 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              email,
+              widget.email,
               style: TextStyle(
                 fontSize: 15,
                 color: forest.withValues(alpha: 0.7),
@@ -69,8 +127,12 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             const Text(
-              'A calmer, more connected life begins with one small step.',
-              style: TextStyle(fontSize: 15, height: 1.5),
+              'A calmer, more connected life begins '
+              'with one small step.',
+              style: TextStyle(
+                fontSize: 15,
+                height: 1.5,
+              ),
             ),
           ],
         ),
