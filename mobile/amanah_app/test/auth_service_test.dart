@@ -51,8 +51,8 @@ void main() {
         tokenStorage: storage,
       );
 
-      expect(
-        () => service.getProfile(),
+      await expectLater(
+        service.getProfile(),
         throwsA(isA<NotAuthenticatedException>()),
       );
       expect(await storage.getToken(), isNull);
@@ -97,8 +97,8 @@ void main() {
         tokenStorage: storage,
       );
 
-      expect(
-        () => service.getProfile(),
+      await expectLater(
+        service.getProfile(),
         throwsA(isA<SessionExpiredException>()),
       );
       expect(await storage.getToken(), isNull);
@@ -118,8 +118,8 @@ void main() {
         tokenStorage: storage,
       );
 
-      expect(
-        () => service.getProfile(),
+      await expectLater(
+        service.getProfile(),
         throwsA(isA<ForbiddenException>()),
       );
       expect(await storage.getToken(), 'forbidden-token');
@@ -135,8 +135,8 @@ void main() {
         tokenStorage: storage,
       );
 
-      expect(
-        () => service.getProfile(),
+      await expectLater(
+        service.getProfile(),
         throwsA(isA<ServerException>()),
       );
       expect(await storage.getToken(), 'ok-token');
@@ -152,8 +152,8 @@ void main() {
         tokenStorage: storage,
       );
 
-      expect(
-        () => service.getProfile(),
+      await expectLater(
+        service.getProfile(),
         throwsA(isA<ResponseParseException>()),
       );
       expect(await storage.getToken(), 'ok-token');
@@ -169,8 +169,8 @@ void main() {
         tokenStorage: storage,
       );
 
-      expect(
-        () => service.getProfile(),
+      await expectLater(
+        service.getProfile(),
         throwsA(isA<NetworkException>()),
       );
       expect(await storage.getToken(), 'ok-token');
@@ -222,8 +222,8 @@ void main() {
         tokenStorage: storage,
       );
 
-      expect(
-        () => service.login(email: 'a@b.com', password: 'wrong'),
+      await expectLater(
+        service.login(email: 'a@b.com', password: 'wrong'),
         throwsA(isA<AuthException>()),
       );
       expect(await storage.getToken(), isNull);

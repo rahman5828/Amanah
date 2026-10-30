@@ -1,5 +1,5 @@
-/// Typed authentication and session errors for AMANAH.
-/// Prefer these over string matching on Exception messages.
+// Typed authentication and session errors for AMANAH.
+// Prefer these over string matching on Exception messages.
 
 class AuthException implements Exception {
   final String message;
