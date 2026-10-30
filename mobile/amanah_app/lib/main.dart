@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 
+import 'core/errors/auth_exceptions.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'services/auth_service.dart';
@@ -70,24 +71,57 @@ class _SessionGateState extends State<SessionGate> {
         _profile = profile;
         _isLoading = false;
       });
+    } on NotAuthenticatedException {
+      if (!mounted) return;
+      // No saved token — go to welcome.
+      setState(() {
+        _profile = null;
+        _isLoading = false;
+        _hasError = false;
+      });
+    } on SessionExpiredException {
+      if (!mounted) return;
+      // Token already cleared by AuthService on 401.
+      setState(() {
+        _profile = null;
+        _isLoading = false;
+        _hasError = false;
+      });
+    } on ForbiddenException {
+      if (!mounted) return;
+      // Authenticated but not allowed — keep token, show retry.
+      setState(() {
+        _profile = null;
+        _isLoading = false;
+        _hasError = true;
+      });
+    } on NetworkException {
+      if (!mounted) return;
+      // Offline / timeout — preserve token.
+      setState(() {
+        _profile = null;
+        _isLoading = false;
+        _hasError = true;
+      });
+    } on ServerException {
+      if (!mounted) return;
+      // 5xx — preserve token.
+      setState(() {
+        _profile = null;
+        _isLoading = false;
+        _hasError = true;
+      });
+    } on ResponseParseException {
+      if (!mounted) return;
+      // Malformed body — preserve token.
+      setState(() {
+        _profile = null;
+        _isLoading = false;
+        _hasError = true;
+      });
     } catch (error) {
       if (!mounted) return;
-
-      final message = error.toString();
-
-      // No saved token or expired/invalid session.
-      if (message.contains('Not authenticated') ||
-          message.contains('Session expired')) {
-        setState(() {
-          _profile = null;
-          _isLoading = false;
-          _hasError = false;
-        });
-        return;
-      }
-
-      // Network or server error: preserve the saved token
-      // and let the user retry.
+      // Unexpected — preserve token and allow retry.
       setState(() {
         _profile = null;
         _isLoading = false;
