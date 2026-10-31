@@ -22,11 +22,13 @@ os.environ.setdefault(
 )
 os.environ.setdefault("JWT_ALGORITHM", "HS256")
 os.environ.setdefault("ACCESS_TOKEN_EXPIRE_MINUTES", "30")
+os.environ.setdefault("REFRESH_TOKEN_EXPIRE_DAYS", "30")
 
 from app.core.database import get_db
 from app.main import app
 from app.models.base import Base
-from app.models.user import User  # noqa: F401 — register metadata
+from app.models.user import User  # noqa: F401
+from app.models.session import Session  # noqa: F401 — register metadata
 
 
 @pytest.fixture()
