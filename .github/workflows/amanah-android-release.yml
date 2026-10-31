@@ -66,7 +66,7 @@ jobs:
           echo "$KEYSTORE_BASE64" | base64 --decode \
             > android/app/amanah-upload-key.jks
 
-          printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=%s\nstoreFile=app/amanah-upload-key.jks\n' \
+          printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=%s\nstoreFile=amanah-upload-key.jks\n' \
             "$KEYSTORE_PASSWORD" "$KEY_PASSWORD" "$KEY_ALIAS" \
             > android/key.properties
 
