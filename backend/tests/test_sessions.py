@@ -42,18 +42,22 @@ def test_successful_refresh(client, registered_user):
 
 
 def test_refresh_rotation_invalidates_old_token(client, registered_user):
+    """After a successful rotation the previous refresh token must be rejected.
+    (Reuse-detection / family revoke is covered by a dedicated test.)
+    """
     tokens = _login(client, registered_user)
     old_refresh = tokens["refresh_token"]
 
     first = client.post("/api/v1/auth/refresh", json={"refresh_token": old_refresh})
     assert first.status_code == 200
     new_refresh = first.json()["refresh_token"]
+    assert new_refresh != old_refresh
 
+    # Old token is no longer valid (revoked by rotation).
     reuse = client.post("/api/v1/auth/refresh", json={"refresh_token": old_refresh})
     assert reuse.status_code == 401
-
-    again = client.post("/api/v1/auth/refresh", json={"refresh_token": new_refresh})
-    assert again.status_code == 200
+    # Note: reuse also triggers family revoke; new_refresh is intentionally
+    # not asserted here — see test_refresh_token_reuse_revokes_family.
 
 
 def test_refresh_token_reuse_revokes_family(client, registered_user, db_session):
@@ -91,7 +95,10 @@ def test_expired_refresh_token(client, registered_user, db_session):
     session.expires_at = datetime.now(timezone.utc) - timedelta(hours=1)
     db_session.commit()
 
-    response = client.post("/api/v1/auth/refresh", json={"refresh_token": raw})
+    response = client.post(
+        "/api/v1/auth/refresh",
+        json={"refresh_token": raw},
+    )
     assert response.status_code == 401
 
 
