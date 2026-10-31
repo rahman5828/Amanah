@@ -1,4 +1,5 @@
 from logging.config import fileConfig
+import os
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
@@ -20,12 +21,14 @@ from app.models import Base
 
 target_metadata = Base.metadata
 
-# Prefer DATABASE_URL from application settings (local .env or cloud env vars).
-# Never rely on a hardcoded sqlalchemy.url in alembic.ini for deployment.
+# Prefer live process environment (Render / CI / tests) over the
+# settings singleton, which is fixed at import time.
+# Fall back to Pydantic settings (local .env) when env var is unset.
 from app.core.config import settings
 
+_raw_url = os.environ.get("DATABASE_URL") or settings.DATABASE_URL
 # ConfigParser treats '%' as interpolation; escape any '%' in the URL.
-_db_url = settings.DATABASE_URL.replace("%", "%%")
+_db_url = _raw_url.replace("%", "%%")
 config.set_main_option("sqlalchemy.url", _db_url)
 
 
