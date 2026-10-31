@@ -16,3 +16,7 @@ coverage/
 *.log
 *.db
 *.sqlite3
+# Android release signing secrets
+mobile/amanah_app/android/key.properties
+mobile/amanah_app/android/app/amanah-upload-key.jks
+mobile/amanah_app/android/app/google-services.json

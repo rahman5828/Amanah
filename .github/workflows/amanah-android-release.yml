@@ -1,0 +1,120 @@
+
+name: AMANAH Android CI/CD
+
+on:
+  push:
+    branches:
+      - feature/session-management
+    paths:
+      - "mobile/amanah_app/**"
+      - ".github/workflows/amanah-android-release.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: amanah-android-release
+  cancel-in-progress: false
+
+jobs:
+  build-and-distribute:
+    name: Test, Build and Distribute APK
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: mobile/amanah_app
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze Flutter code
+        run: flutter analyze
+
+      - name: Run Flutter tests
+        run: flutter test
+
+      - name: Configure Android signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          test -n "$KEYSTORE_BASE64"
+          test -n "$KEYSTORE_PASSWORD"
+          test -n "$KEY_PASSWORD"
+          test -n "$KEY_ALIAS"
+
+          echo "$KEYSTORE_BASE64" | base64 --decode \
+            > android/app/amanah-upload-key.jks
+
+          printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=%s\nstoreFile=app/amanah-upload-key.jks\n' \
+            "$KEYSTORE_PASSWORD" "$KEY_PASSWORD" "$KEY_ALIAS" \
+            > android/key.properties
+
+      - name: Build signed release APK
+        run: |
+          flutter build apk --release \
+            --build-name=1.0.0 \
+            --build-number=${{ github.run_number + 1 }}
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: amanah-release-${{ github.run_number }}
+          path: mobile/amanah_app/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 14
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+        working-directory: .
+
+      - name: Distribute APK through Firebase App Distribution
+        working-directory: .
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+          FIREBASE_ANDROID_APP_ID: ${{ vars.FIREBASE_ANDROID_APP_ID }}
+          FIREBASE_TESTER_GROUP: ${{ vars.FIREBASE_TESTER_GROUP }}
+        run: |
+          test -n "$FIREBASE_SERVICE_ACCOUNT"
+          test -n "$FIREBASE_PROJECT_ID"
+          test -n "$FIREBASE_ANDROID_APP_ID"
+          test -n "$FIREBASE_TESTER_GROUP"
+
+          echo "$FIREBASE_SERVICE_ACCOUNT" \
+            > "$RUNNER_TEMP/firebase-service-account.json"
+
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-service-account.json"
+
+          firebase appdistribution:distribute \
+            mobile/amanah_app/build/app/outputs/flutter-apk/app-release.apk \
+            --app "$FIREBASE_ANDROID_APP_ID" \
+            --project "$FIREBASE_PROJECT_ID" \
+            --groups "$FIREBASE_TESTER_GROUP" \
+            --release-notes "AMANAH build $GITHUB_RUN_NUMBER"
+
+          rm -f "$RUNNER_TEMP/firebase-service-account.json"
