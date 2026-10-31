@@ -50,6 +50,7 @@ def test_successful_login(client, registered_user):
     assert response.status_code == 200
     body = response.json()
     assert "access_token" in body
+    assert "refresh_token" in body
     assert body["token_type"] == "bearer"
 
 
@@ -64,7 +65,6 @@ def test_incorrect_password(client, registered_user):
     assert response.status_code == 401
     detail = response.json()["detail"].lower()
     assert "invalid" in detail
-    # Must not reveal whether email exists.
     assert "not found" not in detail
     assert "no account" not in detail
 
